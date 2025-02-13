@@ -2,6 +2,7 @@ import discord
 import datetime
 import os
 from dotenv import load_dotenv
+from utils.whisper import extract_text_from_audio
 
 load_dotenv()
 
@@ -14,6 +15,9 @@ connections = {}
 if not os.path.exists("recordings"):
     os.makedirs("recordings")
 
+@bot.event
+async def on_ready():
+    print(f"Logged in as {bot.user}")
 
 @bot.command()
 async def record(ctx):
@@ -44,7 +48,9 @@ async def once_done(sink: discord.sinks.WaveSink, channel: discord.TextChannel, 
         with open(filename, "wb") as f:
             f.write(audio.file.read())
 
-        await channel.send(f"🎤 Saved recording for <@{user_id}> as {filename}.")
+        transcription = await extract_text_from_audio(filename)
+        await channel.send(f"🎤 Transcription for <@{user_id}>: {transcription}")
+        os.remove(filename)
 
     if sink.vc.guild.id in connections:
         del connections[sink.vc.guild.id]
