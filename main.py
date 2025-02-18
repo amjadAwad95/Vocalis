@@ -3,6 +3,7 @@ import datetime
 import os
 from dotenv import load_dotenv
 from utils.whisper import extract_text_from_audio
+from utils.deepseek import generate_feedback
 
 load_dotenv()
 
@@ -49,8 +50,21 @@ async def once_done(sink: discord.sinks.WaveSink, channel: discord.TextChannel, 
             f.write(audio.file.read())
 
         transcription = await extract_text_from_audio(filename)
-        await channel.send(f"🎤 Transcription for <@{user_id}>: {transcription}")
+        print(transcription)
+        feedback = await generate_feedback(transcription)
+
+        # Save feedback as a .md file
+        feedback_filename = f"recordings/{user_id}_{timestamp}_feedback.md"
+        with open(feedback_filename, "w", encoding="utf-8") as feedback_file:
+            feedback_file.write(feedback)  # Write the feedback content
+
+        # Send the feedback file to the user
+        with open(feedback_filename, "rb") as file:
+            await channel.send(f"🎤 Feedback for <@{user_id}>:", file=discord.File(file, "feedback.md"))
+
+        # Clean up files
         os.remove(filename)
+        os.remove(feedback_filename)
 
     if sink.vc.guild.id in connections:
         del connections[sink.vc.guild.id]
