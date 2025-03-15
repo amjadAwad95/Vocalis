@@ -1,16 +1,18 @@
 import whisper
 import os
+from model.model import Model
 
 model = whisper.load_model("large")
 os.environ["PATH"] += os.pathsep + r"C:\ffmpeg"
 
 
-async def extract_text_from_audio(audio_path: str) -> str:
-    # Transcribe the audio file
-    result = model.transcribe(audio_path)
+class Whisper(Model):
+    def __init__(self, audio_path):
+        self.audio_path = audio_path
 
-    # Get the transcription
-    transcription = result["text"]
+    async def run(self):
+        result = model.transcribe(self.audio_path)
 
-    # Return the transcription
-    return transcription
+        transcription = result["text"]
+
+        return transcription
