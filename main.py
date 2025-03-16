@@ -3,8 +3,8 @@ import datetime
 import os
 import codecs
 from dotenv import load_dotenv
-from utils.whisper import Whisper
-from utils.deepseek import DeepSeek
+from models.whisper import Whisper
+from models.deepseek import DeepSeek
 from utils.converter import convert_to_html
 from utils.language_detect import detect_main_language
 

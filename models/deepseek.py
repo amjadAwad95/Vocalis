@@ -2,8 +2,8 @@ from openai import OpenAI
 import os
 import re
 from dotenv import load_dotenv
-from model.model import Model
-from utils.prompt import DeepSeekArabicPrompt, DeepSeekEnglishPrompt
+from module.model import Model
+from prompts.deepseek_prompt import DeepSeekArabicPrompt, DeepSeekEnglishPrompt
 
 load_dotenv()
 API_KEY = os.getenv("DEEPSEEK_API_KEY")

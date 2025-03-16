@@ -1,4 +1,4 @@
-from model.prompt import Prompt
+from module.prompt import Prompt
 
 
 class DeepSeekArabicPrompt(Prompt):

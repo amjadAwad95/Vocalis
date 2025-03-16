@@ -1,6 +1,6 @@
 import whisper
 import os
-from model.model import Model
+from module.model import Model
 
 model = whisper.load_model("large")
 os.environ["PATH"] += os.pathsep + r"C:\ffmpeg"
