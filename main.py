@@ -3,10 +3,7 @@ import datetime
 import os
 import codecs
 from dotenv import load_dotenv
-from models.whisper import Whisper
-from models.deepseek import DeepSeek
-from utils.converter import convert_to_html
-from utils.language_detect import detect_main_language
+from models.gemini import Gemini  # Replace Whisper with Gemini
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
@@ -55,30 +52,68 @@ async def once_done(sink: discord.sinks.WaveSink, channel: discord.TextChannel, 
     await sink.vc.disconnect()
 
     for user_id, audio in sink.audio_data.items():
+        feedback_file_path = None  # Initialize feedback_file_path
+        filename = None  # Initialize filename
+
         try:
             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"recordings/{user_id}_{timestamp}.wav"
 
+            # Save the recorded audio to a file
             with open(filename, "wb") as f:
                 f.write(audio.file.read())
 
-            transcription = await Whisper(filename).run()
-            print("📜 Transcription:\n", transcription)
+            # Define the prompt for Gemini
+            prompt = """
+        أنت مدرب عروض تقديمية محترف. قدم تقييمًا مفصلاً بناءً على المعايير التاليةوبناءا على (transcription)، واستخدم تنسيق واضحًا مع عناوين H1 و H2 وقوائم مرتبة وغير مرتبة:
+        
+        <h1>📝 التقييم (Feedback)</h1>
+        <h2>🔹 التقييم التفصيلي للعرض التقديمي</h2>
+        
+        <h3>1️⃣ المحتوى والهيكلة (Content and Structure)</h3>
+        <ul>
+            <li><strong>هل كان العرض منظمًا بشكل جيد؟</strong> اذكر ملاحظاتك حول الترتيب والتسلسل.</li>
+            <li><strong>هل تم تقديم المعلومات بوضوح وتسلسل منطقي؟</strong> وضح إذا كانت هناك حاجة لإعادة ترتيب المحتوى.</li>
+        </ul>
+        
+        <h3>2️⃣ وضوح الرسالة (Clarity and Message)</h3>
+        <ul>
+            <li><strong>هل كانت الأفكار واضحة وسهلة الفهم؟</strong> أضف أمثلة إذا لزم الأمر.</li>
+            <li><strong>هل كانت المصطلحات التقنية (technical terms) مناسبة؟</strong> قم بالإشارة إلى استخدام المصطلحات التقنية بشكل فعال.</li>
+        </ul>
+        
+        <h3>3️⃣ الطلاقة والكلمات الفارغة (Fluency and Filler Words)</h3>
+        <ul>
+            <li><strong>هل كان هناك تكرار لكلمات مثل "يعني" أو "آه"؟</strong> قدم ملاحظات حول استخدام الكلمات الفارغة.</li>
+            <li><strong>هل كان هناك استخدام جيد للتوقفات والتأكيد؟</strong> اذكر كيف يمكن تحسين الإلقاء.</li>
+        </ul>
+        
+        <h2>🎯 نقاط القوة (Strengths)</h2>
+        <ul>
+            <li>اذكر ما تم القيام به بشكل جيد.</li>
+        </ul>
+        
+        <h2>⚡ نقاط التحسين (Areas for Improvement)</h2>
+        <ul>
+            <li>حدد المجالات التي يمكن تحسينها.</li>
+            <li>اقترح توصيات عملية لتحسين الأداء.</li>
+        </ul>
+        
+        <h2>📌 التوصية النهائية</h2>
+        <p>قدم ملخصًا عامًا حول العرض التقديمي والتوصيات لتحسينه.</p>
+        """
 
-            main_language = detect_main_language(transcription)
+            # Generate feedback using Gemini
+            feedback_text = await Gemini(filename,api_key=os.getenv("GOOGLE_API_KEY"),model='gemini-2.0-flash',prompt=prompt).run()
+            print("📜 Feedback:\n", feedback_text)
 
-            feedback = await DeepSeek(transcription).run()
+            # Save feedback to an HTML file
+            feedback_file_path = f"recordings/{user_id}_{timestamp}_feedback.html"
+            with codecs.open(feedback_file_path, "w", encoding="utf-8-sig") as feedback_file:
+                feedback_file.write(feedback_text)
 
-            feedback_html = convert_to_html(feedback, main_language)
-
-            feedback_filename = f"recordings/{user_id}_{timestamp}_feedback.html"
-
-            with codecs.open(
-                feedback_filename, "w", encoding="utf-8-sig"
-            ) as feedback_file:
-                feedback_file.write(feedback_html)
-
-            with open(feedback_filename, "rb") as file:
+            # Send the feedback file to the channel
+            with open(feedback_file_path, "rb") as file:
                 await channel.send(
                     f"🎤 Feedback for <@{user_id}>:",
                     file=discord.File(file, "feedback.html"),
@@ -89,11 +124,13 @@ async def once_done(sink: discord.sinks.WaveSink, channel: discord.TextChannel, 
             print(f"Error: {e}")
 
         finally:
-            if os.path.exists(filename):
+            # Clean up files
+            if filename and os.path.exists(filename):
                 os.remove(filename)
-            if os.path.exists(feedback_filename):
-                os.remove(feedback_filename)
+            if feedback_file_path and os.path.exists(feedback_file_path):
+                os.remove(feedback_file_path)
 
+    # Remove the connection from the dictionary
     if sink.vc.guild.id in connections:
         del connections[sink.vc.guild.id]
 
