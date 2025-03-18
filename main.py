@@ -72,7 +72,7 @@ async def once_done(sink: discord.sinks.WaveSink, channel: discord.TextChannel, 
                 prompt=prompt,
             ).run()
             feedback_text = feedback_text.replace("```html", "").replace("```", "")
-            print("📜 Feedback:\n", feedback_text)
+            print("📜 Feedback Done")
 
             feedback_file_path = f"recordings/{user_id}_{timestamp}_feedback.html"
             with codecs.open(
