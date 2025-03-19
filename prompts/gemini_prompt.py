@@ -139,6 +139,7 @@ class GeminiPrompt(Prompt):
                     --box-shadow-color: rgba(0, 0, 0, 0.1);
                     --border-color: #ccc;
                     --analysis-bg: #e8f5e9;
+                    --read-more-color: #2e7d32;
                 }
 
                 [data-theme="dark"] {
@@ -150,6 +151,7 @@ class GeminiPrompt(Prompt):
                     --box-shadow-color: rgba(255, 255, 255, 0.05);
                     --border-color: #666;
                     --analysis-bg: #555;
+                    --read-more-color: #64b5f6;
                 }
 
                 /* General Styles */
@@ -328,22 +330,53 @@ class GeminiPrompt(Prompt):
                 }
 
                 .read-more-less-container {
-                    text-align: left;
+                    text-align: right; /* Align to right for RTL */
+                    margin-top: 10px; /* Add margin for spacing */
                 }
 
-                #readMoreBtn,
-                #readLessBtn {
+                .read-more-trigger {
                     cursor: pointer;
-                    color: #2979ff;
+                    color: var(--read-more-color);
                     font-weight: 600;
+                    text-decoration: none;
+                    display: flex;
+                    align-items: center;
+                    transition: color 0.3s;
+                }
+
+                .read-more-trigger:hover {
+                    color: darken(var(--read-more-color), 10%);
+                    text-decoration: underline;
+                }
+
+                .read-more-trigger::before {
+                    content: "◄";
+                    font-size: 1.2em;
+                    margin-left: 5px;
+                    transform: rotate(180deg);
+                    transition: transform 0.3s;
+                }
+
+                .read-more-trigger.open::before {
+                    transform: rotate(90deg);
+                    content: "▼";
+                }
+
+                .read-more-content {
                     display: none;
                     margin-top: 10px;
-                    text-decoration: none;
+                    padding: 10px;
+                    border: 1px solid var(--border-color);
+                    border-radius: 5px;
+                    background-color: var(--section-bg);
                 }
 
-                #readMoreBtn:hover,
-                #readLessBtn:hover {
-                    text-decoration: underline;
+                .read-more-content.show {
+                    display: block;
+                }
+
+                .summary {
+                    margin-bottom: 10px;
                 }
 
             </style>
@@ -368,8 +401,8 @@ class GeminiPrompt(Prompt):
                     <p id="transcriptionText">{transcription}</p>
 
                     <div class="read-more-less-container">
-                        <a id="readMoreBtn" onclick="toggleTranscription()">{read_more_text}</a>
-                        <a id="readLessBtn" onclick="toggleTranscription()">{read_less_text}</a>
+                        <a id="readMoreBtn" class="read-more-trigger" onclick="toggleTranscription()">{read_more_text}</a>
+                        <a id="readLessBtn" class="read-more-trigger" onclick="toggleTranscription()">{read_less_text}</a>
                     </div>
                 </div>
                 <div class="section">
@@ -377,67 +410,110 @@ class GeminiPrompt(Prompt):
                     <div class="voice-analysis-container">
                         <div class="voice-analysis-item">
                             <h3><span class="analysis-icon">🔊</span> {voice_speed_heading}</h3>
-                            <p><span class="analysis-label">{assessment_label}:</span> {voice_speed}</p>
-                            <p><span class="analysis-label">{notes_label}:</span> {voice_speed_notes}</p>
+                            <p><strong>{assessment_label}:</strong> {voice_speed}</p>
+                            <p><strong>{notes_label}:</strong> {voice_speed_notes}</p>
                         </div>
                         <div class="voice-analysis-item">
                             <h3><span class="analysis-icon">🗣️</span> {voice_volume_heading}</h3>
-                            <p><span class="analysis-label">{assessment_label}:</span> {voice_volume}</p>
-                            <p><span class="analysis-label">{notes_label}:</span> {voice_volume_notes}</p>
+                            <p><strong>{assessment_label}:</strong> {voice_volume}</p>
+                            <p><strong>{notes_label}:</strong> {voice_volume_notes}</p>
                         </div>
                         <div class="voice-analysis-item">
                             <h3><span class="analysis-icon">🎵</span> {voice_tone_heading}</h3>
-                            <p><span class="analysis-label">{assessment_label}:</span> {voice_tone}</p>
-                            <p><span class="analysis-label">{notes_label}:</span> {voice_tone_notes}</p>
+                            <p><strong>{assessment_label}:</strong> {voice_tone}</p>
+                            <p><strong>{notes_label}:</strong> {voice_tone_notes}</p>
                         </div>
                         <div class="voice-analysis-item">
                             <h3><span class="analysis-icon">😊</span> {emotions_heading}</h3>
-                            <p><span class="analysis-label">{assessment_label}:</span> {emotions}</p>
-                            <p><span class="analysis-label">{notes_label}:</span> {emotions_notes}</p>
+                            <p><strong>{assessment_label}:</strong> {emotions}</p>
+                            <p><strong>{notes_label}:</strong> {emotions_notes}</p>
                         </div>
                         <div class="voice-analysis-item">
                             <h3><span class="analysis-icon">💬</span> {pauses_filler_heading}</h3>
-                            <p><span class="analysis-label">{assessment_label}:</span> {pauses_filler}</p>
-                            <p><span class="analysis-label">{notes_label}:</span> {pauses_filler_notes}</p>
+                            <p><strong>{assessment_label}:</strong> {pauses_filler}</p>
+                            <p><strong>{notes_label}:</strong> {pauses_filler_notes}</p>
                         </div>
                         <div class="voice-analysis-item">
                             <h3><span class="analysis-icon">📈</span> {pitch_engagement_heading}</h3>
-                            <p><span class="analysis-label">{assessment_label}:</span> {pitch_engagement}</p>
-                            <p><span class="analysis-label">{notes_label}:</span> {pitch_engagement_notes}</p>
+                            <p><strong>{assessment_label}:</strong> {pitch_engagement}</p>
+                            <p><strong>{notes_label}:</strong> {pitch_engagement_notes}</p>
                         </div>
                     </div>
                 </div>
                 <div class="section">
                     <h2>3. {content_structure_heading}</h2>
-                    <p>{content_structure}</p>
+                    <p class="summary">{content_structure_summary}</p>
+                    <div class="read-more-less-container">
+                        <a class="read-more-trigger" onclick="toggleReadMore('contentStructure')">{read_more_text} ({detailed_analysis_text})</a>
+                        <div id="contentStructure" class="read-more-content">
+                            {content_structure_detailed}
+                        </div>
+                    </div>
                 </div>
                 <div class="section">
                     <h2>4. {strengths_weaknesses_heading}</h2>
                     <div style="display: flex; flex-direction: column;">
                         <div>
                             <h3>{strengths_heading}</h3>
-                            <p>{strengths}</p>
+                            <p class="summary">{strengths_summary}</p>
+                            <div class="read-more-less-container">
+                                <a class="read-more-trigger" onclick="toggleReadMore('strengths')">{read_more_text} ({detailed_analysis_text})</a>
+                                <div id="strengths" class="read-more-content">
+                                    {strengths_detailed}
+                                </div>
+                            </div>
                         </div>
                         <div>
                             <h3>{weaknesses_heading}</h3>
-                            <p>{weaknesses}</p>
+                            <p class="summary">{weaknesses_summary}</p>
+                            <div class="read-more-less-container">
+                                <a class="read-more-trigger" onclick="toggleReadMore('weaknesses')">{read_more_text} ({detailed_analysis_text})</a>
+                                <div id="weaknesses" class="read-more-content">
+                                    {weaknesses_detailed}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div class="section">
                     <h2>5. {fluency_heading}</h2>
-                    <p>{fluency}</p>
+                    <p class="summary">{fluency_summary}</p>
+                    <div class="read-more-less-container">
+                        <a class="read-more-trigger" onclick="toggleReadMore('fluency')">{read_more_text} ({detailed_analysis_text})</a>
+                        <div id="fluency" class="read-more-content">
+                            {fluency_detailed}
+                        </div>
+                    </div>
                 </div>
                 <div class="section">
                     <h2>6. {improvement_heading}</h2>
-                    <p>{areas_for_improvement}</p>
+                    <p class="summary">{improvement_summary}</p>
+                    <div class="read-more-less-container">
+                        <a class="read-more-trigger" onclick="toggleReadMore('improvement')">{read_more_text} ({detailed_analysis_text})</a>
+                        <div id="improvement" class="read-more-content">
+                            {improvement_detailed}
+                        </div>
+                    </div>
                 </div>
                 <div class="section">
                     <h2>7. {recommendation_heading}</h2>
-                    <p>{final_recommendation}</p>
+                    <p class="summary">{recommendation_summary}</p>
+                    <div class="read-more-less-container">
+                        <a class="read-more-trigger" onclick="toggleReadMore('recommendation')">{read_more_text} ({detailed_analysis_text})</a>
+                        <div id="recommendation" class="read-more-content">
+                            {recommendation_detailed}
+                        </div>
+                    </div>
                 </div>
             </div>
             <script>
+                function toggleReadMore(elementId) {
+                    const element = document.getElementById(elementId);
+                    const trigger = element.parentElement.querySelector('.read-more-trigger');
+                    element.classList.toggle('show');
+                    trigger.classList.toggle('open');
+                }
+
                 function toggleTranscription() {
                     var transcriptionText = document.getElementById("transcriptionText");
                     var readMoreBtn = document.getElementById("readMoreBtn");
@@ -445,68 +521,56 @@ class GeminiPrompt(Prompt):
 
                     if (transcriptionText.classList.contains('truncated')) {
                         transcriptionText.classList.remove('truncated');
-                        transcriptionText.style.webkitLineClamp = 'unset'; // remove line clamp
+                        transcriptionText.style.webkitLineClamp = 'unset';
                         readMoreBtn.style.display = "none";
-                        readLessBtn.style.display = "inline-block";
+                        readLessBtn.style.display = "flex";
+                        readLessBtn.style.alignItems = "center";
                     } else {
                         transcriptionText.classList.add('truncated');
-                        transcriptionText.style.webkitLineClamp = '5'; // truncate to 5 lines
-                        readMoreBtn.style.display = "inline-block";
+                        transcriptionText.style.webkitLineClamp = '5';
+                        readMoreBtn.style.display = "flex";
+                        readMoreBtn.style.alignItems = "center";
                         readLessBtn.style.display = "none";
                     }
                 }
 
                 document.addEventListener('DOMContentLoaded', function () {
+                    const checkbox = document.getElementById('checkbox');
+                    const darkModeLabel = document.getElementById("darkModeLabel");
+
+                    checkbox.addEventListener('change', () => {
+                        document.body.dataset.theme = document.body.dataset.theme === "light" ? "dark" : "light";
+                        darkModeLabel.textContent = document.body.dataset.theme === "light" ? "{dark_mode_enable_text}" : "{dark_mode_disable_text}";
+                        localStorage.setItem('theme', document.body.dataset.theme);
+                    });
+
+                    const savedTheme = localStorage.getItem('theme');
+                    if (savedTheme) {
+                        document.body.dataset.theme = savedTheme;
+                        checkbox.checked = (savedTheme === "dark");
+                        darkModeLabel.textContent = (savedTheme === "dark") ? "{dark_mode_disable_text}" : "{dark_mode_enable_text}";
+                    }
+
                     var transcriptionText = document.getElementById("transcriptionText");
                     var readMoreBtn = document.getElementById("readMoreBtn");
                     var readLessBtn = document.getElementById("readLessBtn");
 
-                    // Calculate the height of one line
                     const lineHeight = parseFloat(window.getComputedStyle(transcriptionText).lineHeight);
-
-                    // Calculate the maximum height for 5 lines
                     const maxHeight = lineHeight * 5;
 
-                    // Check if the actual height exceeds the maximum height
                     if (transcriptionText.scrollHeight > maxHeight) {
                         transcriptionText.classList.add('truncated');
-                        transcriptionText.style.webkitLineClamp = '5'; // truncate to 5 lines
-                        readMoreBtn.style.display = "inline-block";
+                        transcriptionText.style.webkitLineClamp = '5';
+                        readMoreBtn.style.display = "flex";
+                        readMoreBtn.style.alignItems = "center";
                     } else {
                         readMoreBtn.style.display = "none";
                         readLessBtn.style.display = "none";
                     }
                 });
-
-
-                // Dark/Light Mode Toggle
-                const checkbox = document.getElementById('checkbox');
-                const darkModeLabel = document.getElementById("darkModeLabel");
-                checkbox.addEventListener('change', () => {
-                    document.body.dataset.theme = document.body.dataset.theme === "light" ? "dark" : "light";
-                    darkModeLabel.textContent = document.body.dataset.theme === "light" ? "{dark_mode_enable_text}" : "{dark_mode_disable_text}";
-
-                    // Store the theme preference in local storage
-                    localStorage.setItem('theme', document.body.dataset.theme);
-                });
-
-                // Check local storage for previously selected theme
-                document.addEventListener('DOMContentLoaded', function () {
-                    const savedTheme = localStorage.getItem('theme');
-                    if (savedTheme) {
-                        document.body.dataset.theme = savedTheme;
-                        if (document.body.dataset.theme === "dark") {
-                            checkbox.checked = true;
-                            darkModeLabel.textContent = "{dark_mode_disable_text}";
-                        } else {
-                            darkModeLabel.textContent = "{dark_mode_enable_text}";
-                        }
-                    }
-                });
             </script>
 
             <style>
-                /* Add this CSS  to the style block */
                 #transcriptionText.truncated {
                     -webkit-line-clamp: 5;
                     display: -webkit-box;
