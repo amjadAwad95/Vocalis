@@ -2,9 +2,11 @@ import discord
 import datetime
 import os
 import codecs
+import json
 from dotenv import load_dotenv
 from models.gemini import Gemini
 from prompts.gemini_prompt import GeminiPrompt
+from utils.html_structure import html_structure
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
@@ -71,7 +73,9 @@ async def once_done(sink: discord.sinks.WaveSink, channel: discord.TextChannel, 
                 model="gemini-2.0-flash",
                 prompt=prompt,
             ).run()
-            feedback_text = feedback_text.replace("```html", "").replace("```", "")
+            json_text = feedback_text.replace("```json\n", "").replace("```", "")
+            json_object = json.loads(json_text)
+            feedback_text = html_structure(json_object)
             print("📜 Feedback Done")
 
             feedback_file_path = f"recordings/{user_id}_{timestamp}_feedback.html"
