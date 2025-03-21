@@ -2,11 +2,11 @@ import discord
 import datetime
 import os
 import codecs
+import json
 from dotenv import load_dotenv
-from models.whisper import Whisper
-from models.deepseek import DeepSeek
-from utils.converter import convert_to_html
-from utils.language_detect import detect_main_language
+from models.gemini import Gemini
+from prompts.gemini_prompt import GeminiPrompt
+from utils.html_structure import html_structure
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
@@ -55,6 +55,9 @@ async def once_done(sink: discord.sinks.WaveSink, channel: discord.TextChannel, 
     await sink.vc.disconnect()
 
     for user_id, audio in sink.audio_data.items():
+        feedback_file_path = None
+        filename = None
+
         try:
             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"recordings/{user_id}_{timestamp}.wav"
@@ -62,23 +65,26 @@ async def once_done(sink: discord.sinks.WaveSink, channel: discord.TextChannel, 
             with open(filename, "wb") as f:
                 f.write(audio.file.read())
 
-            transcription = await Whisper(filename).run()
-            print("📜 Transcription:\n", transcription)
+            prompt = GeminiPrompt().generate()
 
-            main_language = detect_main_language(transcription)
+            feedback_text = await Gemini(
+                filename,
+                api_key=os.getenv("GOOGLE_API_KEY"),
+                model="gemini-2.0-flash",
+                prompt=prompt,
+            ).run()
+            json_text = feedback_text.replace("```json\n", "").replace("```", "")
+            json_object = json.loads(json_text)
+            feedback_text = html_structure(json_object)
+            print("📜 Feedback Done")
 
-            feedback = await DeepSeek(transcription).run()
-
-            feedback_html = convert_to_html(feedback, main_language)
-
-            feedback_filename = f"recordings/{user_id}_{timestamp}_feedback.html"
-
+            feedback_file_path = f"recordings/{user_id}_{timestamp}_feedback.html"
             with codecs.open(
-                feedback_filename, "w", encoding="utf-8-sig"
+                feedback_file_path, "w", encoding="utf-8-sig"
             ) as feedback_file:
-                feedback_file.write(feedback_html)
+                feedback_file.write(feedback_text)
 
-            with open(feedback_filename, "rb") as file:
+            with open(feedback_file_path, "rb") as file:
                 await channel.send(
                     f"🎤 Feedback for <@{user_id}>:",
                     file=discord.File(file, "feedback.html"),
@@ -89,10 +95,10 @@ async def once_done(sink: discord.sinks.WaveSink, channel: discord.TextChannel, 
             print(f"Error: {e}")
 
         finally:
-            if os.path.exists(filename):
+            if filename and os.path.exists(filename):
                 os.remove(filename)
-            if os.path.exists(feedback_filename):
-                os.remove(feedback_filename)
+            if feedback_file_path and os.path.exists(feedback_file_path):
+                os.remove(feedback_file_path)
 
     if sink.vc.guild.id in connections:
         del connections[sink.vc.guild.id]
